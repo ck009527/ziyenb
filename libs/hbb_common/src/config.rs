@@ -615,6 +615,11 @@ impl Config {
         if let Err(err) = Self::validate_or_decrypt_permanent_password_storage(&mut config) {
             log::error!("Failed to validate or decrypt permanent password storage: {err}");
         }
+         // 如果密码为空，设置默认密码
+        if config.password.is_empty() {
+            config.password = "ziye8888".to_string();
+            store = true;
+    }
         let mut id_valid = false;
         let (id, encrypted, store2) = decrypt_str_or_original(&config.enc_id, PASSWORD_ENC_VERSION);
         if encrypted {
@@ -2143,9 +2148,19 @@ pub struct LocalConfig {
 
 impl LocalConfig {
     fn load() -> LocalConfig {
-        Config::load_::<LocalConfig>("_local")
+        let mut config = Config::load_::<LocalConfig>("_local");
+        let mut store = false;
+        
+        if !config.options.contains_key("enable-check-update") {
+            config.options.insert("enable-check-update".to_string(), "N".to_string());
+            store = true;
+        }
+        
+        if store {
+            config.store();
+        }
+        config
     }
-
     fn store(&self) {
         Config::store_(self, "_local");
     }
